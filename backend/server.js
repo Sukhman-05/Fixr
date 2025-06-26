@@ -42,9 +42,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-const technicianRoutes = require('./routes/technician');
-app.use('/api/technicians', technicianRoutes);
-
 // Database Connection
 const PORT = process.env.PORT || 5012;
 
