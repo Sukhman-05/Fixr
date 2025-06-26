@@ -5,6 +5,7 @@ import { Camera, Upload, Zap, MapPin, Star, Clock } from 'lucide-react-native';
 import { CameraComponent } from 'components/CameraComponent';
 import { ProblemForm } from 'components/ProblemForm';
 import { TechnicianCard } from 'components/TechnicianCard';
+import { analyzeImageWithAI } from '../../src/services/aiService';
 
 interface Technician {
   id: string;
@@ -21,8 +22,8 @@ export default function HomeScreen() {
   const [currentView, setCurrentView] = useState<'home' | 'camera' | 'form' | 'results'>('home');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
-
-  const mockTechnicians: Technician[] = [
+  // Use static dummy data for technicians
+  const [technicians] = useState<Technician[]>([
     {
       id: '1',
       name: 'Mike Johnson',
@@ -53,17 +54,27 @@ export default function HomeScreen() {
       avatar: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=400',
       responseTime: '30 min'
     }
-  ];
+  ]);
 
   const handleImageCaptured = (imageUri: string) => {
     setCapturedImage(imageUri);
     setCurrentView('form');
   };
 
-  const handleProblemSubmitted = (problemData: any) => {
-    // Mock AI diagnosis
-    setDiagnosis("Based on the image analysis, this appears to be a leaky pipe connection. The water stains and pipe corrosion suggest a joint replacement is needed. This is a common plumbing issue that requires professional attention to prevent water damage.");
-    setCurrentView('results');
+  const handleProblemSubmitted = async (problemData: any) => {
+    try {
+      if (capturedImage) {
+        setDiagnosis("Analyzing image...");
+        const result = await analyzeImageWithAI(capturedImage);
+        setDiagnosis(result.diagnosis);
+      } else {
+        setDiagnosis("No image provided.");
+      }
+      setCurrentView('results');
+    } catch (error: any) {
+      setDiagnosis(error.message || "Error analyzing image.");
+      setCurrentView('results');
+    }
   };
 
   const handleBookTechnician = (technician: Technician) => {
@@ -77,11 +88,18 @@ export default function HomeScreen() {
     );
   };
 
+  // State reset when returning to home
+  const handleBackToHome = () => {
+    setCapturedImage(null);
+    setDiagnosis(null);
+    setCurrentView('home');
+  };
+
   if (currentView === 'camera') {
     return (
       <CameraComponent
         onImageCaptured={handleImageCaptured}
-        onCancel={() => setCurrentView('home')}
+        onCancel={handleBackToHome}
       />
     );
   }
@@ -103,7 +121,7 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => setCurrentView('home')}
+              onPress={handleBackToHome}
             >
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
@@ -129,7 +147,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionSubtitle}>Based on your location and issue type</Text>
           </View>
 
-          {mockTechnicians.map((technician) => (
+          {technicians.map((technician) => (
             <TechnicianCard
               key={technician.id}
               technician={technician}
