@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Camera, Upload, Zap, MapPin, Star, Clock } from 'lucide-react-native';
 import { CameraComponent } from 'components/CameraComponent';
@@ -19,9 +19,10 @@ interface Technician {
 }
 
 export default function HomeScreen() {
-  const [currentView, setCurrentView] = useState<'home' | 'camera' | 'form' | 'results'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'camera' | 'form' | 'results' | 'loading'>('home');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   // Use static dummy data for technicians
   const [technicians] = useState<Technician[]>([
     {
@@ -64,7 +65,9 @@ export default function HomeScreen() {
   const handleProblemSubmitted = async (problemData: any) => {
     try {
       if (capturedImage) {
-        setDiagnosis("Analyzing image...");
+        setIsLoading(true);
+        setCurrentView('loading');
+        setDiagnosis(null);
         const result = await analyzeImageWithAI(capturedImage);
         setDiagnosis(result.diagnosis);
       } else {
@@ -74,6 +77,8 @@ export default function HomeScreen() {
     } catch (error: any) {
       setDiagnosis(error.message || "Error analyzing image.");
       setCurrentView('results');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -159,6 +164,17 @@ export default function HomeScreen() {
     );
   }
 
+  if (currentView === 'loading') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Analyzing your image...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -175,14 +191,6 @@ export default function HomeScreen() {
             <Camera size={28} color="#FFFFFF" />
             <Text style={styles.primaryButtonText}>Take Photo</Text>
             <Text style={styles.primaryButtonSubtext}>Snap a picture of your problem</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setCurrentView('form')}
-          >
-            <Upload size={24} color="#2563EB" />
-            <Text style={styles.secondaryButtonText}>Upload Image</Text>
           </TouchableOpacity>
         </View>
 
@@ -435,5 +443,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#374151',
     lineHeight: 22,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 18,
+    color: '#2563EB',
+    fontFamily: 'Inter-Bold',
   },
 });
