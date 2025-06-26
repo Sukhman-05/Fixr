@@ -5,11 +5,10 @@ export const analyzeImageWithAI = async (
   const PYTHON_API_URL = process.env.EXPO_PUBLIC_AI_API_URL || 'http://127.0.0.1:8000';
 
   const formData = new FormData();
-  formData.append('image', {
-    uri: imageUri,
-    name: 'image.jpg',
-    type: 'image/jpeg',
-  } as any);
+  // Convert URI to Blob
+  const fileResponse = await fetch(imageUri);
+  const blob = await fileResponse.blob();
+  formData.append('image', blob, 'image.jpg');
   formData.append('threadID', threadId);
 
   const response = await fetch(`${PYTHON_API_URL}/analyze-image/`, {
